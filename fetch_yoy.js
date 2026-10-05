@@ -16,7 +16,11 @@ async function run() {
   console.log('Connecting...');
   const pool = await sql.connect(CONFIG);
 
-  console.log('Fetching YoY data for Jul-Aug only (months with both 2025+2026 data)... FIXED: Item Type via tblItemArc');
+  // DYNAMIC: always compare current year vs previous year, all months present in both.
+  // New months (e.g. September) appear automatically once postings exist in both years.
+  const yrThis = new Date().getFullYear();
+  const yrLast = yrThis - 1;
+  console.log(`Fetching YoY data for ${yrLast} vs ${yrThis}, all months... FIXED: Item Type via tblItemArc`);
   const res = await pool.request().query(`
     SELECT 
       b.strBusinessUnitCode AS sbu,
@@ -39,8 +43,7 @@ async function run() {
     LEFT JOIN itm.tblItemArc i ON r.intItemId = i.intItemId
     LEFT JOIN itm.tblItemMasterArc m ON i.intItemMasterId = m.intItemMasterId
     WHERE h.intBusinessUnitId IN (${SBU_IDS.join(',')})
-      AND MONTH(h.dteTransactionDate) IN (7, 8)
-      AND YEAR(h.dteTransactionDate) IN (2025, 2026)
+      AND YEAR(h.dteTransactionDate) IN (${yrLast}, ${yrThis})
       AND h.TransactionGroupId = 2
     GROUP BY b.strBusinessUnitCode, b.strBusinessUnitName, r.intItemId,
       COALESCE(i.strItemCode, CAST(r.intItemId AS NVARCHAR(50))), r.strItemName,
@@ -57,8 +60,8 @@ async function run() {
     if (!byKey[key].meta) {
       byKey[key].meta = { sbu: r.sbu, sbu_name: r.sbu_name, sys_id: r.sys_id, item_code: r.item_code, item_desc: r.item_desc, mat_type: r.mat_type, uom: r.uom || '', txn_type: r.txn_type, mon: r.mon };
     }
-    if (r.yr === 2025) { byKey[key].last.value += r.value; byKey[key].last.qty += r.qty; }
-    if (r.yr === 2026) { byKey[key].this.value += r.value; byKey[key].this.qty += r.qty; }
+    if (r.yr === yrLast) { byKey[key].last.value += r.value; byKey[key].last.qty += r.qty; }
+    if (r.yr === yrThis) { byKey[key].this.value += r.value; byKey[key].this.qty += r.qty; }
   });
 
   const yoyData = [];

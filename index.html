@@ -293,7 +293,7 @@ canvas { max-height: 340px; }
 <!-- YoY Rate Comparison -->
 <div class="card" style="margin-top:16px;">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
-    <h3 style="margin:0;">YEAR-OVER-YEAR RATE COMPARISON (July & August)</h3>
+    <h3 style="margin:0;">YEAR-OVER-YEAR RATE COMPARISON (Same month YoY)</h3>
     <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
       <select id="yoySbuFilter" onchange="renderYoY()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="all">All SBUs</option></select>
       <select id="yoyMonthFilter" onchange="renderYoY()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;box-shadow:var(--shadow);"><option value="7">July</option><option value="8">August</option></select>
@@ -1100,6 +1100,13 @@ function exportCSV() {
 // ===== YoY RATE COMPARISON =====
 function initYoY() {
   if (typeof YOY_DATA === 'undefined') { document.getElementById('yoyTable').innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px;">yoy_data.js not loaded. Run fetch_yoy.js to generate.</p>'; return; }
+  // DYNAMIC months: whatever months exist in both years (Jul/Aug today, Sep+ auto-appears once posted)
+  var mSel = document.getElementById('yoyMonthFilter');
+  var monthsAvail = [...new Set(YOY_DATA.map(d => d.mon))].sort(function(a,b){return a-b;});
+  var mnames = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+  mSel.innerHTML = '';
+  monthsAvail.forEach(function(m){ var o = document.createElement('option'); o.value = m; o.textContent = mnames[m]||('M'+m); mSel.appendChild(o); });
+  mSel.value = monthsAvail[monthsAvail.length-1];
   var sbuSel = document.getElementById('yoySbuFilter');
   [...new Set(YOY_DATA.map(d => d.sbu))].sort().forEach(c => { var o = document.createElement('option'); o.value = c; o.textContent = c; sbuSel.appendChild(o); });
   
